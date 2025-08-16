@@ -100,23 +100,64 @@ const App: React.FC = () => {
         </header>
 
         <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12">
-          {/* 모델 선택 드롭다운 */}
-          <div className="mb-8">
-            <label htmlFor="model-select" className="block text-sm font-medium text-gray-700 mb-2">
-              AI 모델 선택
-            </label>
-            <select
-              id="model-select"
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
-              className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all duration-200"
-            >
-              <option value="gemini-2.5-flash">Gemini 2.5 Flash (빠름)</option>
-              <option value="gemini-2.5-pro">Gemini 2.5 Pro (정확함)</option>
-            </select>
-            <p className="mt-2 text-xs text-gray-500">
-              Flash: 빠른 처리, Pro: 더 정확한 분석
-            </p>
+          {/* 모델 선택 섹션 */}
+          <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">AI 모델 선택</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className={`relative cursor-pointer p-4 rounded-xl border-2 transition-all duration-200 ${selectedModel === 'gemini-2.5-flash' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <input
+                  type="radio"
+                  name="model"
+                  value="gemini-2.5-flash"
+                  checked={selectedModel === 'gemini-2.5-flash'}
+                  onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
+                  className="sr-only"
+                />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">Gemini 2.5 Flash</div>
+                    <div className="text-sm text-gray-600">빠른 처리 속도</div>
+                    <div className="text-xs text-blue-600 mt-1">⚡ 권장</div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedModel === 'gemini-2.5-flash' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+                    {selectedModel === 'gemini-2.5-flash' && (
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    )}
+                  </div>
+                </div>
+              </label>
+
+              <label className={`relative cursor-pointer p-4 rounded-xl border-2 transition-all duration-200 ${selectedModel === 'gemini-2.5-pro' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <input
+                  type="radio"
+                  name="model"
+                  value="gemini-2.5-pro"
+                  checked={selectedModel === 'gemini-2.5-pro'}
+                  onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
+                  className="sr-only"
+                />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">Gemini 2.5 Pro</div>
+                    <div className="text-sm text-gray-600">정확한 분석</div>
+                    <div className="text-xs text-purple-600 mt-1">🎯 고정밀</div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedModel === 'gemini-2.5-pro' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+                    {selectedModel === 'gemini-2.5-pro' && (
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    )}
+                  </div>
+                </div>
+              </label>
+            </div>
           </div>
 
           <FileUpload onFileSelect={handleFileSelect} onAnalyze={handleAnalyze} isLoading={isLoading} />
