@@ -11,7 +11,6 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [selectedModel, setSelectedModel] = useState<'gemini-2.5-flash' | 'gemini-2.5-pro'>('gemini-2.5-flash');
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
@@ -38,7 +37,7 @@ const App: React.FC = () => {
           const result = await analyzeDocument({
             mimeType: file.type,
             data: base64String,
-          }, { model: selectedModel });
+          });
           setAnalysisResult(result);
         } catch (err) {
             if (err instanceof Error) {
@@ -62,7 +61,7 @@ const App: React.FC = () => {
        }
       setIsLoading(false);
     }
-  }, [file, selectedModel]);
+  }, [file]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -100,25 +99,6 @@ const App: React.FC = () => {
         </header>
 
         <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12">
-          {/* 모델 선택 드롭다운 */}
-          <div className="mb-8">
-            <label htmlFor="model-select" className="block text-sm font-medium text-gray-700 mb-2">
-              AI 모델 선택
-            </label>
-            <select
-              id="model-select"
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
-              className="w-full max-w-xs px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all duration-200"
-            >
-              <option value="gemini-2.5-flash">Gemini 2.5 Flash (빠름)</option>
-              <option value="gemini-2.5-pro">Gemini 2.5 Pro (정확함)</option>
-            </select>
-            <p className="mt-2 text-xs text-gray-500">
-              Flash: 빠른 처리, Pro: 더 정확한 분석
-            </p>
-          </div>
-
           <FileUpload onFileSelect={handleFileSelect} onAnalyze={handleAnalyze} isLoading={isLoading} />
 
           {error && (

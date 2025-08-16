@@ -1,7 +1,13 @@
+import { GoogleGenAI, Type } from "@google/genai";
 import type { AnalysisResult } from '../types';
 
-// 프론트엔드에서는 직접 Gemini를 호출하지 않고, Vercel Serverless API를 호출합니다.
-// 아래 프롬프트는 서버의 api/analyze.ts에 있습니다.
+if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set");
+}
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+const model = 'gemini-2.5-flash';
 
 const prompt = `
 아래 프롬프트 세트는 업로드된 제조 일지 이미지/PDF를 원본과 최대한 동일하게 디지털 템플릿으로 복원하기 위한 단계형 지침입니다. 
@@ -108,20 +114,86 @@ markdown_template:
 - 테이블/섹션 순서는 markdown_template 순서와 동일해야 함
 `;
 
-export const analyzeDocument = async (file: { mimeType: string; data: string }, opts?: { model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' }): Promise<AnalysisResult> => {
-  const res = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...file, model: opts?.model }),
-  });
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(`Analyze failed: ${res.status} ${msg}`);
+export const analyzeDocument = async (file: { mimeType: string; data: string }): Promise<AnalysisResult> => {
+  try {
+    const response = await ai.models.generateContent({
+        model: model,
+        contents: {
+            parts: [
+                { text: prompt },
+                {
+                    inlineData: {
+                        mimeType: file.mimeType,
+                        data: file.data
+                    }
+                }
+            ]
+        },
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    data_schema: {
+                        type: Type.ARRAY,
+                        description: 'An array of objects, where each object describes a form field with its name and type. The first item is a metadata comment.',
+                        items: {
+                           type: Type.OBJECT,
+                           properties: {
+                               name: {
+                                   type: Type.STRING,
+                                   description: "The camelCase name for the field or '_comment' for metadata."
+                               },
+                               type: {
+                                   type: Type.STRING,
+                                   description: "The data type for the field (e.g., 'string', 'number') or 'metadata'."
+                               },
+                               value: {
+                                   type: Type.STRING,
+                                   description: "An optional value, used for the metadata comment."
+                               }
+                           },
+                           required: ["name", "type"]
+                        }
+                    },
+                    markdown_template: {
+                        type: Type.STRING,
+                        description: 'Markdown template with placeholders, starting with a producer comment.'
+                    },
+                    html_template: {
+                        type: Type.STRING,
+                        description: 'Reusable HTML form template with a producer comment, Tailwind CSS, and data-id attributes.'
+                    }
+                },
+                required: ["data_schema", "markdown_template", "html_template"]
+            },
+            temperature: 0.1,
+        }
+    });
+
+    const textResponse = response.text.trim();
+    
+    if (!textResponse.startsWith('{') || !textResponse.endsWith('}')) {
+        throw new Error("AI returned an invalid JSON response format.");
+    }
+    
+    const parsedResponse = JSON.parse(textResponse);
+    
+    if (!parsedResponse.data_schema || !parsedResponse.markdown_template || !parsedResponse.html_template) {
+      throw new Error("AI response is missing one or more required fields: data_schema, markdown_template, html_template.");
+    }
+
+    if (!Array.isArray(parsedResponse.data_schema)) {
+        throw new Error("AI response field 'data_schema' is not an array as expected.");
+    }
+
+    return parsedResponse as AnalysisResult;
+
+  } catch (error) {
+    console.error("Error calling Gemini API:", error);
+    if (error instanceof Error) {
+        throw new Error(`Gemini API Error: ${error.message}`);
+    }
+    throw new Error("An unknown error occurred while communicating with the AI service.");
   }
-  const parsed = await res.json();
-  // 최소 검증
-  if (!parsed?.data_schema || !parsed?.markdown_template || !parsed?.html_template) {
-    throw new Error('Invalid analyze response shape');
-  }
-  return parsed as AnalysisResult;
 };

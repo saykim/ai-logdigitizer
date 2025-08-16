@@ -7,7 +7,6 @@ if (!apiKey) {
 }
 
 const ai = new GoogleGenAI({ apiKey });
-const model = 'gemini-2.5-flash';
 
 // Prompt focused on: data_schema (JSON) → markdown_template (pure Markdown) → html_template (Vanilla CSS)
 const prompt = `
@@ -121,13 +120,16 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { mimeType, data } = req.body as { mimeType: string; data: string };
+    const { mimeType, data, model } = req.body as { mimeType: string; data: string; model?: string };
     if (!mimeType || !data) {
       return res.status(400).json({ error: 'Invalid payload' });
     }
 
+    // Validate and choose model (default: flash)
+    const chosenModel = model === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+
     const response = await ai.models.generateContent({
-      model,
+      model: chosenModel,
       contents: {
         parts: [
           { text: prompt },
