@@ -86,12 +86,12 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="text-left">
-                  <h1 className="text-5xl md:text-7xl font-black leading-none">
-                    <span className="block bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                <div>
+                  <h1 className="text-4xl md:text-6xl font-black leading-tight">
+                    <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                       AI Report-Log
                     </span>
-                    <span className="block bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mt-1">
+                    <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent ml-3">
                       Digitizer
                     </span>
                   </h1>
