@@ -66,12 +66,12 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] xl:px-8 2xl:px-12">
         <header className="text-center mb-20">
           <div className="relative">
             {/* 배경 장식 */}
             <div className="absolute inset-0 -z-10 overflow-hidden">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-gradient-to-r from-blue-50/80 to-indigo-50/80 rounded-full blur-3xl"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] xl:w-[1200px] xl:h-[600px] bg-gradient-to-r from-blue-50/80 to-indigo-50/80 rounded-full blur-3xl"></div>
             </div>
             
             {/* 메인 로고 및 제목 */}
@@ -87,7 +87,7 @@ const App: React.FC = () => {
                 </div>
                 
                 <div>
-                  <h1 className="text-4xl md:text-6xl font-black leading-tight">
+                  <h1 className="text-4xl md:text-6xl xl:text-7xl font-black leading-tight">
                     <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                       AI Report-Log
                     </span>
@@ -109,8 +109,8 @@ const App: React.FC = () => {
             </div>
             
             {/* 설명 텍스트 */}
-            <div className="max-w-4xl mx-auto mb-10">
-              <p className="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+            <div className="max-w-5xl xl:max-w-6xl mx-auto mb-10">
+              <p className="text-xl md:text-2xl xl:text-3xl text-gray-600 leading-relaxed font-light">
                 제조 리포트와 로그를 
                 <span className="font-semibold text-blue-600 mx-2">구조화된 데이터</span>와
                 <br className="hidden md:block" />
@@ -137,7 +137,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12">
+        <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 xl:p-16">
           {/* 처리 모드 선택 */}
           <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-xl">
             <div className="flex items-center">
@@ -193,7 +193,9 @@ const App: React.FC = () => {
 
           {analysisResult && !isLoading && (
             <div className="mt-12">
-              <ResultDisplay result={analysisResult} />
+              <div className="w-full">
+                <ResultDisplay result={analysisResult} />
+              </div>
             </div>
           )}
 
