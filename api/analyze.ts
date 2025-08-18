@@ -121,57 +121,91 @@ export default async function handler(req: any, res: any) {
 
   try {
     const { mimeType, data, model } = req.body as { mimeType: string; data: string; model?: string };
+    
+    // 입력 데이터 검증
     if (!mimeType || !data) {
-      return res.status(400).json({ error: 'Invalid payload' });
+      console.error('Missing required fields:', { mimeType: !!mimeType, data: !!data });
+      return res.status(400).json({ error: 'Missing required fields: mimeType and data' });
+    }
+
+    if (typeof mimeType !== 'string' || typeof data !== 'string') {
+      console.error('Invalid field types:', { mimeType: typeof mimeType, data: typeof data });
+      return res.status(400).json({ error: 'Invalid field types' });
     }
 
     // Validate and choose model (default: flash)
     const chosenModel = model === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    console.log('Using model:', chosenModel);
 
-    const response = await ai.models.generateContent({
-      model: chosenModel,
-      contents: {
-        parts: [
-          { text: prompt },
-          {
-            inlineData: {
-              mimeType,
-              data,
-            },
-          },
-        ],
-      },
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            data_schema: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  type: { type: Type.STRING },
-                  value: { type: Type.STRING },
-                },
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: chosenModel,
+        contents: {
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType,
+                data,
               },
             },
-            markdown_template: { type: Type.STRING },
-            html_template: { type: Type.STRING },
-          },
-          required: ['data_schema', 'markdown_template', 'html_template'],
+          ],
         },
-        temperature: 0.1,
-      },
-    });
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              data_schema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    type: { type: Type.STRING },
+                    value: { type: Type.STRING },
+                  },
+                },
+              },
+              markdown_template: { type: Type.STRING },
+              html_template: { type: Type.STRING },
+            },
+            required: ['data_schema', 'markdown_template', 'html_template'],
+          },
+          temperature: 0.1,
+        },
+      });
+    } catch (apiError) {
+      console.error('Gemini API call failed:', apiError);
+      return res.status(503).json({ error: 'AI service temporarily unavailable' });
+    }
+
+    // 응답 검증 및 안전한 텍스트 추출
+    if (!response || !response.text) {
+      console.error('Empty or invalid response from Gemini API:', response);
+      return res.status(502).json({ error: 'Empty response from AI model' });
+    }
 
     const text = response.text.trim();
+    if (!text) {
+      console.error('Empty text response from Gemini API');
+      return res.status(502).json({ error: 'Empty text response from AI model' });
+    }
+
     if (!text.startsWith('{') || !text.endsWith('}')) {
+      console.error('Invalid JSON format from Gemini API:', text.substring(0, 200));
       return res.status(502).json({ error: 'Invalid JSON response from model' });
     }
 
-    const parsed = JSON.parse(text);
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError, 'Text:', text.substring(0, 200));
+      return res.status(502).json({ error: 'Failed to parse AI response as JSON' });
+    }
+
     return res.status(200).json(parsed);
   } catch (err: any) {
     console.error('analyze API error:', err);
