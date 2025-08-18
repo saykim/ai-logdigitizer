@@ -170,10 +170,17 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
                 </button>
             </div>
             <div className="p-6 md:p-8 xl:p-12 bg-white">
-                 <div
-                    className="prose max-w-none xl:prose-lg"
-                    dangerouslySetInnerHTML={{ __html: result.html_template }}
-                />
+                 <div className="w-full border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                    <iframe
+                      srcDoc={result.html_template}
+                      className="w-full min-h-[600px] xl:min-h-[800px] border-0 bg-white"
+                      sandbox="allow-same-origin allow-scripts"
+                      title="HTML Template Preview"
+                      style={{
+                        colorScheme: 'light'
+                      }}
+                    />
+                 </div>
             </div>
           </div>
         );
