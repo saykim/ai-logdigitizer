@@ -84,7 +84,7 @@ HTML 태그 사용 절대 금지.
 다음 **data_schema**와 **markdown_template**만을 참고하여, 
 원본과 최대한 유사한 Vanilla CSS 기반 html_template를 생성하라.이미지/PDF는 절대 참조하지 말 것. 
 HTML은 반드시 주어진 JSON과 Markdown으로만 구성한다.
-줄 바꿈, 들여쓰기 등 시인성을 고려해. 
+출력 html 파일에 줄 바꿈, 들여쓰기 등 Refactoring 적용해
 
 입력:
 data_schema:
