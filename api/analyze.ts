@@ -84,7 +84,7 @@ HTML 태그 사용 절대 금지.
 다음 **data_schema**와 **markdown_template**만을 참고하여, 
 원본과 최대한 유사한 Vanilla CSS 기반 html_template를 생성하라.이미지/PDF는 절대 참조하지 말 것. 
 HTML은 반드시 주어진 JSON과 Markdown으로만 구성한다.
-출력 html 파일에 줄 바꿈, 들여쓰기 등 가독성을 고려한 Refactoring 적용해
+html 코드 줄 바꿈, 들여쓰기 등 가독성을 고려한 코드 포맷팅, 리팩토링 적용해
 
 입력:
 data_schema:
@@ -112,6 +112,7 @@ markdown_template:
 - 모든 {{fieldName}}는 data_schema.fields[].key 안에 존재해야 함(미스매치 금지)
 - 루트에 bg-white text-black 포함 여부 확인
 - 테이블/섹션 순서는 markdown_template 순서와 동일해야 함
+- html 코드 줄 바꿈, 들여쓰기 등 가독성을 고려한 코드 포맷팅, 리팩토링 적용해
 `;
 
 export default async function handler(req: any, res: any) {
