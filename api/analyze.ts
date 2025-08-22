@@ -17,7 +17,7 @@ html파일을 가지고 db연결해서 반영구적으로 시스템에서 사용
 
 [system]
 You are an expert in reverse-engineering scanned manufacturing logs into structured, reusable digital templates.
-Your absolute priority is to faithfully preserve the original page’s layout, spacing, and visual style.
+Your absolute priority is to faithfully preserve the original page's layout, spacing, and visual style.
 Never modernize or beautify the design. Be literal and conservative.
 
 All outputs MUST be a single valid JSON object only (no prose, no code fences).
@@ -116,7 +116,13 @@ markdown_template:
 `;
 
 export default async function handler(req: any, res: any) {
+  // Vercel 타임아웃 설정 (최대 30초)
+  const timeout = setTimeout(() => {
+    return res.status(408).json({ error: 'Request timeout - AI processing took too long' });
+  }, 30000);
+
   if (req.method !== 'POST') {
+    clearTimeout(timeout);
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
@@ -126,11 +132,13 @@ export default async function handler(req: any, res: any) {
     // 입력 데이터 검증
     if (!mimeType || !data) {
       console.error('Missing required fields:', { mimeType: !!mimeType, data: !!data });
+      clearTimeout(timeout);
       return res.status(400).json({ error: 'Missing required fields: mimeType and data' });
     }
 
     if (typeof mimeType !== 'string' || typeof data !== 'string') {
       console.error('Invalid field types:', { mimeType: typeof mimeType, data: typeof data });
+      clearTimeout(timeout);
       return res.status(400).json({ error: 'Invalid field types' });
     }
 
@@ -140,6 +148,7 @@ export default async function handler(req: any, res: any) {
 
     let response;
     try {
+      console.log('Starting Gemini API call with model:', chosenModel);
       response = await ai.models.generateContent({
         model: chosenModel,
         contents: {
@@ -159,15 +168,30 @@ export default async function handler(req: any, res: any) {
             type: Type.OBJECT,
             properties: {
               data_schema: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    type: { type: Type.STRING },
-                    value: { type: Type.STRING },
-                  },
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  fields: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        key: { type: Type.STRING },
+                        label: { type: Type.STRING },
+                        type: { type: Type.STRING },
+                        required: { type: Type.BOOLEAN },
+                        order: { type: Type.NUMBER },
+                        enum: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        unit: { type: Type.STRING },
+                        format: { type: Type.STRING },
+                        group: { type: Type.STRING },
+                        notes: { type: Type.STRING }
+                      },
+                      required: ['key', 'label', 'type', 'required', 'order']
+                    }
+                  }
                 },
+                required: ['title', 'fields']
               },
               markdown_template: { type: Type.STRING },
               html_template: { type: Type.STRING },
@@ -175,40 +199,99 @@ export default async function handler(req: any, res: any) {
             required: ['data_schema', 'markdown_template', 'html_template'],
           },
           temperature: 0.1,
+          maxOutputTokens: 8192,
         },
       });
-    } catch (apiError) {
+      console.log('Gemini API call completed successfully');
+    } catch (apiError: any) {
       console.error('Gemini API call failed:', apiError);
-      return res.status(503).json({ error: 'AI service temporarily unavailable' });
+      clearTimeout(timeout);
+      
+      // 더 구체적인 에러 메시지 제공
+      if (apiError.message?.includes('timeout')) {
+        return res.status(408).json({ error: 'AI service timeout - please try again' });
+      } else if (apiError.message?.includes('quota')) {
+        return res.status(429).json({ error: 'AI service quota exceeded - please try again later' });
+      } else {
+        return res.status(503).json({ error: 'AI service temporarily unavailable' });
+      }
     }
 
     // 응답 검증 및 안전한 텍스트 추출
-    if (!response || !response.text) {
-      console.error('Empty or invalid response from Gemini API:', response);
-      return res.status(502).json({ error: 'Empty response from AI model' });
+    if (!response) {
+      console.error('No response from Gemini API');
+      clearTimeout(timeout);
+      return res.status(502).json({ error: 'No response from AI model' });
     }
 
-    const text = response.text.trim();
-    if (!text) {
+    // Google GenAI SDK의 올바른 텍스트 추출 방법
+    let text: string;
+    try {
+      // candidates 배열에서 텍스트 추출
+      if (!response.candidates || response.candidates.length === 0) {
+        console.error('No candidates in response:', response);
+        clearTimeout(timeout);
+        return res.status(502).json({ error: 'No candidates in AI response' });
+      }
+
+      const candidate = response.candidates[0];
+      if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+        console.error('No content parts in candidate:', candidate);
+        clearTimeout(timeout);
+        return res.status(502).json({ error: 'No content in AI response' });
+      }
+
+      // 텍스트 부분 추출
+      const textPart = candidate.content.parts[0];
+      if (typeof textPart.text !== 'string') {
+        console.error('Text part is not a string:', textPart);
+        clearTimeout(timeout);
+        return res.status(502).json({ error: 'Invalid text format in AI response' });
+      }
+      text = textPart.text;
+      console.log('Successfully extracted text from Gemini response, length:', text.length);
+    } catch (textError) {
+      console.error('Failed to extract text from response:', textError);
+      console.error('Response structure:', JSON.stringify(response, null, 2));
+      clearTimeout(timeout);
+      return res.status(502).json({ error: 'Failed to extract response text' });
+    }
+
+    if (!text || !text.trim()) {
       console.error('Empty text response from Gemini API');
+      console.error('Full response:', JSON.stringify(response, null, 2));
+      clearTimeout(timeout);
       return res.status(502).json({ error: 'Empty text response from AI model' });
     }
 
-    if (!text.startsWith('{') || !text.endsWith('}')) {
-      console.error('Invalid JSON format from Gemini API:', text.substring(0, 200));
+    // JSON 형식 검증
+    const trimmedText = text.trim();
+    if (!trimmedText.startsWith('{') || !trimmedText.endsWith('}')) {
+      console.error('Invalid JSON format from Gemini API:', trimmedText.substring(0, 200));
+      clearTimeout(timeout);
       return res.status(502).json({ error: 'Invalid JSON response from model' });
     }
 
     let parsed;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(trimmedText);
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError, 'Text:', text.substring(0, 200));
+      console.error('JSON parsing error:', parseError, 'Text:', trimmedText.substring(0, 200));
+      clearTimeout(timeout);
       return res.status(502).json({ error: 'Failed to parse AI response as JSON' });
     }
 
+    // 응답 구조 검증
+    if (!parsed.data_schema || !parsed.markdown_template || !parsed.html_template) {
+      console.error('Invalid response structure:', Object.keys(parsed));
+      clearTimeout(timeout);
+      return res.status(502).json({ error: 'Invalid response structure from AI model' });
+    }
+
+    clearTimeout(timeout);
     return res.status(200).json(parsed);
   } catch (err: any) {
+    clearTimeout(timeout);
     console.error('analyze API error:', err);
     return res.status(500).json({ error: err?.message || 'Server error' });
   }
