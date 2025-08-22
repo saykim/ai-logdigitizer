@@ -208,7 +208,7 @@ const App: React.FC = () => {
         </main>
         
         <footer className="text-center mt-12 text-gray-400 text-sm">
-          <p>Powered by AI 제조DX</p>
+          <p>Powered by BDK AI </p>
         </footer>
       </div>
     </div>
