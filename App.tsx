@@ -68,33 +68,34 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] xl:px-8 2xl:px-12">
+        {/* 상단 인증 영역 */}
+        <div className="flex justify-end mb-8">
+          <SignedOut>
+            <div className="flex items-center gap-3">
+              <SignInButton mode="modal">
+                <button className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-md hover:shadow-lg">
+                  로그인
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
+                  회원가입
+                </button>
+              </SignUpButton>
+            </div>
+          </SignedOut>
+          <SignedIn>
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-12 h-12"
+                }
+              }}
+            />
+          </SignedIn>
+        </div>
+
         <header className="text-center mb-20">
-          {/* 인증 버튼 영역 */}
-          <div className="absolute top-4 right-4 z-10">
-            <SignedOut>
-              <div className="flex items-center gap-3">
-                <SignInButton mode="modal">
-                  <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
-                    로그인
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                    회원가입
-                  </button>
-                </SignUpButton>
-              </div>
-            </SignedOut>
-            <SignedIn>
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: "w-10 h-10"
-                  }
-                }}
-              />
-            </SignedIn>
-          </div>
 
           <div className="relative">
             {/* 배경 장식 */}
@@ -166,73 +167,139 @@ const App: React.FC = () => {
         </header>
 
         <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 xl:p-16">
-          {/* 처리 모드 선택 */}
-          <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-            <div className="flex items-center">
-              <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-3">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+          {/* 비로그인 사용자용 안내 */}
+          <SignedOut>
+            <div className="text-center py-20">
+              <div className="mb-8">
+                <div className="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">로그인이 필요합니다</h2>
+                <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                  AI Report-Log Digitizer를 사용하려면 먼저 로그인해주세요.<br />
+                  안전하고 개인화된 서비스를 제공하기 위해 계정이 필요합니다.
+                </p>
               </div>
-              <span className="font-medium text-gray-700">처리 모드</span>
-            </div>
-            
-            <div className="flex bg-white rounded-lg p-1 border border-gray-200">
-              <label className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedModel === 'gemini-2.5-flash' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
-                <input
-                  type="radio"
-                  name="model"
-                  value="gemini-2.5-flash"
-                  checked={selectedModel === 'gemini-2.5-flash'}
-                  onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
-                  className="sr-only"
-                />
-                ⚡ 빠른 처리
-              </label>
               
-              <label className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedModel === 'gemini-2.5-pro' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
-                <input
-                  type="radio"
-                  name="model"
-                  value="gemini-2.5-pro"
-                  checked={selectedModel === 'gemini-2.5-pro'}
-                  onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
-                  className="sr-only"
-                />
-                🎯 정확한 분석
-              </label>
-            </div>
-          </div>
-
-          <FileUpload onFileSelect={handleFileSelect} onAnalyze={handleAnalyze} isLoading={isLoading} />
-
-          {error && (
-            <div className="mt-8 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl">
-              <p className="font-medium">오류가 발생했습니다: {error}</p>
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="mt-12 flex flex-col items-center justify-center space-y-6">
-                <Spinner />
-                <p className="text-gray-600 text-lg">문서를 분석 중입니다...</p>
-            </div>
-          )}
-
-          {analysisResult && !isLoading && (
-            <div className="mt-12">
-              <div className="w-full">
-                <ResultDisplay result={analysisResult} />
+              <div className="flex items-center justify-center gap-4">
+                <SignInButton mode="modal">
+                  <button className="px-8 py-4 text-lg font-semibold text-white bg-blue-600 border border-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl">
+                    로그인하기
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="px-8 py-4 text-lg font-semibold text-blue-600 bg-white border-2 border-blue-600 rounded-xl hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl">
+                    회원가입하기
+                  </button>
+                </SignUpButton>
+              </div>
+              
+              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div className="text-center p-6 bg-gray-50 rounded-xl">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">AI 기반 분석</h3>
+                  <p className="text-sm text-gray-600">최신 AI 기술로 정확한 문서 분석</p>
+                </div>
+                
+                <div className="text-center p-6 bg-gray-50 rounded-xl">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">빠른 처리</h3>
+                  <p className="text-sm text-gray-600">실시간으로 문서를 구조화된 데이터로 변환</p>
+                </div>
+                
+                <div className="text-center p-6 bg-gray-50 rounded-xl">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">다중 포맷 지원</h3>
+                  <p className="text-sm text-gray-600">PDF, JPEG, PNG 등 다양한 형식 지원</p>
+                </div>
               </div>
             </div>
-          )}
+          </SignedOut>
 
-           {!isLoading && !analysisResult && !error && (
-            <div className="mt-12 text-center text-gray-400 py-16 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/30">
-              <p className="text-lg font-medium mb-2">문서를 업로드하여 시작하세요</p>
-              <p className="text-sm">지원 형식: PDF, JPEG, PNG</p>
+          {/* 로그인 사용자용 기능 */}
+          <SignedIn>
+            {/* 처리 모드 선택 */}
+            <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+              <div className="flex items-center">
+                <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-3">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <span className="font-medium text-gray-700">처리 모드</span>
+              </div>
+              
+              <div className="flex bg-white rounded-lg p-1 border border-gray-200">
+                <label className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedModel === 'gemini-2.5-flash' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+                  <input
+                    type="radio"
+                    name="model"
+                    value="gemini-2.5-flash"
+                    checked={selectedModel === 'gemini-2.5-flash'}
+                    onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
+                    className="sr-only"
+                  />
+                  ⚡ 빠른 처리
+                </label>
+                
+                <label className={`cursor-pointer px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${selectedModel === 'gemini-2.5-pro' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}>
+                  <input
+                    type="radio"
+                    name="model"
+                    value="gemini-2.5-pro"
+                    checked={selectedModel === 'gemini-2.5-pro'}
+                    onChange={(e) => setSelectedModel(e.target.value as 'gemini-2.5-flash' | 'gemini-2.5-pro')}
+                    className="sr-only"
+                  />
+                  🎯 정확한 분석
+                </label>
+              </div>
             </div>
-          )}
+
+            <FileUpload onFileSelect={handleFileSelect} onAnalyze={handleAnalyze} isLoading={isLoading} />
+
+            {error && (
+              <div className="mt-8 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl">
+                <p className="font-medium">오류가 발생했습니다: {error}</p>
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="mt-12 flex flex-col items-center justify-center space-y-6">
+                  <Spinner />
+                  <p className="text-gray-600 text-lg">문서를 분석 중입니다...</p>
+              </div>
+            )}
+
+            {analysisResult && !isLoading && (
+              <div className="mt-12">
+                <div className="w-full">
+                  <ResultDisplay result={analysisResult} />
+                </div>
+              </div>
+            )}
+
+             {!isLoading && !analysisResult && !error && (
+              <div className="mt-12 text-center text-gray-400 py-16 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/30">
+                <p className="text-lg font-medium mb-2">문서를 업로드하여 시작하세요</p>
+                <p className="text-sm">지원 형식: PDF, JPEG, PNG</p>
+              </div>
+            )}
+          </SignedIn>
         </main>
         
         <footer className="text-center mt-12 text-gray-400 text-sm">
