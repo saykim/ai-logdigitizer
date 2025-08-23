@@ -144,7 +144,10 @@ const App: React.FC = () => {
                 <span className="font-semibold text-blue-600 mx-2">구조화된 데이터</span>와
                 <br className="hidden md:block" />
                 <span className="font-semibold text-indigo-600 mx-2">재사용 가능한 템플릿</span>으로 
-                <span className="font-bold text-gray-800 bg-gradient-to-r from-yellow-100 to-yellow-50 px-2 py-1 rounded-lg">즉시 변환</span>
+                <span className="font-black text-gray-900 bg-gradient-to-r from-yellow-200 via-yellow-300 to-yellow-200 px-3 py-2 rounded-lg shadow-md border-2 border-yellow-400 relative">
+                  <span className="relative z-10">즉시 변환</span>
+                  <span className="absolute inset-0 bg-yellow-300 opacity-30 rounded-lg animate-pulse"></span>
+                </span>
               </p>
             </div>
             
