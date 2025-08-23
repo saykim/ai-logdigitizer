@@ -117,10 +117,10 @@ const App: React.FC = () => {
                 
                 <div>
                   <h1 className="text-4xl md:text-6xl xl:text-7xl font-black leading-tight">
-                    <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    <span className="text-gray-900">
                       AI Report-Log
                     </span>
-                    <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent ml-3">
+                    <span className="text-blue-600 ml-3">
                       Digitizer
                     </span>
                   </h1>
@@ -303,7 +303,7 @@ const App: React.FC = () => {
         </main>
         
         <footer className="text-center mt-12 text-gray-400 text-sm">
-          <p>Powered by AI 제조DX</p>
+          <p>Powered by B</p>
         </footer>
       </div>
     </div>
