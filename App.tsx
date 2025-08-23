@@ -259,20 +259,12 @@ const App: React.FC = () => {
               <p className="text-sm">지원 형식: PDF, JPEG, PNG</p>
             </div>
           )}
-<<<<<<< HEAD
-        </main>
-        
-        <footer className="text-center mt-12 text-gray-400 text-sm">
-          <p>Powered by BDK AI </p>
-        </footer>
-=======
           </main>
           
           <footer className="text-center mt-12 text-gray-400 text-sm">
             <p>Powered by BDK AI </p>
           </footer>
         </SignedIn>
->>>>>>> 486b49c (로그인 추가)
       </div>
     </div>
   );
