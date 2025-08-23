@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import { FileUpload } from './components/FileUpload';
 import { ResultDisplay } from './components/ResultDisplay';
 import { Spinner } from './components/Spinner';
@@ -67,6 +68,31 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] xl:px-8 2xl:px-12">
+        {/* 로그인 버튼 - 우측 상단 */}
+        <div className="flex justify-end mb-4">
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-white">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="font-medium text-gray-700">로그인</span>
+              </button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-10 h-10",
+                  userButtonPopoverCard: "shadow-xl border border-gray-200",
+                  userButtonPopoverActionButton: "hover:bg-gray-50"
+                }
+              }}
+            />
+          </SignedIn>
+        </div>
+        
         <header className="text-center mb-20">
           <div className="relative">
             {/* 배경 장식 */}
@@ -137,7 +163,35 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 xl:p-16">
+        <SignedOut>
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 xl:p-16">
+            <div className="text-center py-16">
+              <div className="mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">로그인이 필요합니다</h2>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  AI Report-Log Digitizer를 사용하려면 로그인해 주세요. 
+                  안전하고 개인화된 서비스를 제공합니다.
+                </p>
+                <SignInButton mode="modal">
+                  <button className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-3 rounded-full font-medium hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    로그인하기
+                  </button>
+                </SignInButton>
+              </div>
+            </div>
+          </div>
+        </SignedOut>
+
+        <SignedIn>
+          <main className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 xl:p-16">
           {/* 처리 모드 선택 */}
           <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-xl">
             <div className="flex items-center">
@@ -205,11 +259,20 @@ const App: React.FC = () => {
               <p className="text-sm">지원 형식: PDF, JPEG, PNG</p>
             </div>
           )}
+<<<<<<< HEAD
         </main>
         
         <footer className="text-center mt-12 text-gray-400 text-sm">
           <p>Powered by BDK AI </p>
         </footer>
+=======
+          </main>
+          
+          <footer className="text-center mt-12 text-gray-400 text-sm">
+            <p>Powered by BDK AI </p>
+          </footer>
+        </SignedIn>
+>>>>>>> 486b49c (로그인 추가)
       </div>
     </div>
   );

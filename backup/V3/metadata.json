@@ -1,0 +1,5 @@
+{
+  "name": "AI Log Digitizer",
+  "description": "An application to automatically analyze manufacturing logs (PDF, image) and convert them into a structured JSON schema, a reusable Markdown template, and a final HTML form using AI.",
+  "requestFramePermissions": []
+}
