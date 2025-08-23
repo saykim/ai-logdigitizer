@@ -1,4 +1,0 @@
-# Environment Variables
-GEMINI_API_KEY=your_api_key_here
-NODE_ENV=development
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173

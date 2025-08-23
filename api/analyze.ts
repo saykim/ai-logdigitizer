@@ -1,83 +1,142 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { getAnalysisPrompt, validatePromptIntegrity } from '../lib/prompts';
 
-// 환경변수 검증 강화
+// Ensure API key is present in the server environment
 const apiKey = process.env.GEMINI_API_KEY;
-const nodeEnv = process.env.NODE_ENV || 'development';
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173'];
-
 if (!apiKey) {
-  throw new Error('🚨 GEMINI_API_KEY environment variable not configured');
-}
-
-// 프롬프트 무결성 검증
-if (!validatePromptIntegrity()) {
-  throw new Error('🚨 프롬프트 무결성 검증 실패 - 서버 시작 중단');
+  throw new Error('GEMINI_API_KEY environment variable not set');
 }
 
 const ai = new GoogleGenAI({ apiKey });
 
+// Prompt focused on: data_schema (JSON) → markdown_template (pure Markdown) → html_template (Vanilla CSS)
+const prompt = `
+아래 프롬프트 세트는 업로드된 제조 일지 이미지/PDF를 원본과 최대한 동일하게 디지털 템플릿으로 복원하기 위한 단계형 지침입니다. 
+출력은 단계적으로 data_schema → markdown_template → html_template 순서로 생성하며, 
+HTML 단계에서는 이미지/PDF를 다시 보지 않고 오직 이전 두 산출물만 사용합니다.
+html파일을 가지고 db연결해서 반영구적으로 시스템에서 사용할겁니다. 
+
+[system]
+You are an expert in reverse-engineering scanned manufacturing logs into structured, reusable digital templates.
+Your absolute priority is to faithfully preserve the original page’s layout, spacing, and visual style.
+Never modernize or beautify the design. Be literal and conservative.
+
+All outputs MUST be a single valid JSON object only (no prose, no code fences).
+
+1단계 — data_schema(JSON) 생성 
+업로드된 제조 일지 이미지/PDF를 분석해 원본과 동일한 필드 구조와 순서의 data_schema만 생성하라.
+
+출력 형식(단일 JSON 객체):
+{
+  "data_schema": {
+    "title": "원본 문서명(간결)",
+    "fields": [
+      {
+        "key": "공백/특수문자 없는 키(원본 라벨 기반)",
+        "label": "원본 라벨(한글/공백 허용)",
+        "type": "string|number|boolean|date|time|datetime|enum|textarea|checkbox|radio",
+        "required": true|false,
+        "order": <원본 시각 순서 정수>,
+        "enum": ["선택지1","선택지2"],
+        "unit": "단위(있으면)",
+        "format": "date|time|datetime|regex|none",
+        "group": "섹션/테이블 이름(있으면)",
+        "notes": "불확실한 추정 근거(있으면)"
+      }
+      // … 모든 필드를 원본 순서대로 기술
+    ]
+  }
+}
+
+제약:
+- 페이지/레이아웃 해석은 하되, 지금은 데이터 구조만 출력한다.
+- 체크박스/라디오/서명칸/합계줄 등 특수 요소도 가능한 범위에서 type으로 표현한다.
+- 불확실하면 type을 보수적으로 지정하고 notes에 근거를 남긴다.
+--------------------------------
+2단계 — design(markdown_template) 생성 
+ - 순수 마크다운만 허용(HTML 태그 절대 금지). 이 단계에서 원본 레이아웃을 최대한 정확하게 서술합니다.
+
+아래 data_schema를 참고하여 **원본 레이아웃을 반영한 순수 마크다운 템플릿**만 생성하라.
+
+입력:
+<PASTE_STEP1_JSON_HERE>
+
+출력 형식(단일 JSON 객체):
+{
+  "markdown_template": "..."
+}
+
+마크다운 규칙(엄격):
+HTML 태그 사용 절대 금지.
+제목: #, ##, ### 만 사용
+테이블: | 구분자만 사용 (열 너비 힌트는 헤더명 뒤 괄호 %로 표기 가능: 예) 항목(40%))
+강조: 굵게, 기울임 만 사용
+구분선: ---
+목록: -, 1.
+플레이스홀더: {{fieldName}} (data_schema.fields[].key와 일치)
+체크박스: [ ] 또는 [x] 만 사용 (예: 점검 항목 표의 체크 열)
+원본의 섹션 순서/표 구조/라벨/칸 배치를 그대로 반영할 것
+여백/간격/라인 두께는 불가피하게 근사 표현 시, 표/제목/구분선 배치로 드러낼 것
+(선택) 열 너비 힌트: 표 헤더에 비율 표기 예) | 항목(40%) | 체크(20%) | 비고(40%) |
+
+--------------------------------
+3단계 — html_template 생성 
+이 단계는 이미지나 PDF를 다시 보지 않고, 오직 data_schema와 markdown_template 두 개만 입력으로 사용해 HTML을 만든다.
+다음 **data_schema**와 **markdown_template**만을 참고하여, 
+원본과 최대한 유사한 Vanilla CSS 기반 html_template를 생성하라.이미지/PDF는 절대 참조하지 말 것. 
+HTML은 반드시 주어진 JSON과 Markdown으로만 구성한다.
+html 코드 줄 바꿈, 들여쓰기 등 가독성을 고려한 코드 포맷팅, 리팩토링 적용해
+
+입력:
+data_schema:
+<PASTE_STEP1_JSON_HERE>
+
+markdown_template:
+<PASTE_STEP2_JSON_HERE.markdown_template>
+
+출력 형식(단일 JSON 객체):
+{
+  "html_template": "<div style=\"min-height: 100vh; background: white; color: black;\"> ... </div>"
+}
+
+스타일/기능 제약:
+- 루트 컨테이너: **bg-white text-black** (항상 밝은 배경, 어두운 텍스트)
+- Vanilla CSS 중심, 인라인 스타일 또는 <style> 태그 활용
+- **모든 데이터 자리**는 {{fieldName}} placeholder 유지(치환용)
+- 마크다운의 표/제목/구분선/목록 구조를 **충실히** 보존하여 HTML로 매핑
+- 테이블/그리드 폭 비율은 마크다운 헤더의 괄호 % 힌트를 파싱해 CSS width: %로 설정
+- 체크박스/라디오는 <input type="checkbox">, <input type="radio">로 표현하되 값 표시는 placeholder 로 유지,
+- 인쇄 품질: @media print { @page { size: A4; margin: 10mm } } 포함,
+- 임의 미화/재배치 금지. 마크다운(레이아웃 사양서)을 최대한 **그대로** HTML로 투영할 것
+
+검증 규칙(내부적으로 준수):
+- 모든 {{fieldName}}는 data_schema.fields[].key 안에 존재해야 함(미스매치 금지)
+- 루트에 bg-white text-black 포함 여부 확인
+- 테이블/섹션 순서는 markdown_template 순서와 동일해야 함
+- html 코드 줄 바꿈, 들여쓰기 등 가독성을 고려한 코드 포맷팅, 리팩토링 적용해
+`;
 
 export default async function handler(req: any, res: any) {
-  // CORS 보안 검증
-  const origin = req.headers.origin;
-  if (nodeEnv === 'production' && origin && !allowedOrigins.includes(origin)) {
-    console.warn(`🚨 차단된 Origin 접근 시도: ${origin}`);
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-
-  // HTTP 메서드 검증
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // 요청 크기 제한 (보안)
-  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
-  if (contentLength > 50 * 1024 * 1024) { // 50MB 제한
-    console.warn(`🚨 요청 크기 초과: ${contentLength} bytes`);
-    return res.status(413).json({ error: 'Request too large' });
-  }
-
   try {
-    const { mimeType, data, model, userTier = 'free' } = req.body as { 
-      mimeType: string; 
-      data: string; 
-      model?: string;
-      userTier?: 'free' | 'premium' | 'enterprise';
-    };
+    const { mimeType, data, model } = req.body as { mimeType: string; data: string; model?: string };
     
-    // 입력 데이터 검증 강화
+    // 입력 데이터 검증
     if (!mimeType || !data) {
-      console.error('❌ 필수 필드 누락:', { mimeType: !!mimeType, data: !!data });
-      return res.status(400).json({ error: '필수 데이터가 누락되었습니다' });
+      console.error('Missing required fields:', { mimeType: !!mimeType, data: !!data });
+      return res.status(400).json({ error: 'Missing required fields: mimeType and data' });
     }
 
     if (typeof mimeType !== 'string' || typeof data !== 'string') {
-      console.error('❌ 잘못된 데이터 타입:', { mimeType: typeof mimeType, data: typeof data });
-      return res.status(400).json({ error: '잘못된 데이터 형식입니다' });
+      console.error('Invalid field types:', { mimeType: typeof mimeType, data: typeof data });
+      return res.status(400).json({ error: 'Invalid field types' });
     }
 
-    // 파일 타입 검증
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!allowedMimeTypes.includes(mimeType)) {
-      console.warn(`🚨 허용되지 않은 파일 타입: ${mimeType}`);
-      return res.status(400).json({ error: '지원하지 않는 파일 형식입니다' });
-    }
-
-    // Base64 데이터 크기 검증 (약 10MB 제한)
-    if (data.length > 13 * 1024 * 1024) { // Base64는 원본보다 약 33% 큼
-      console.warn(`🚨 파일 크기 초과: ${Math.round(data.length / 1024 / 1024)}MB`);
-      return res.status(413).json({ error: '파일 크기가 너무 큽니다 (최대 10MB)' });
-    }
-
-    // 모델 선택 및 검증
+    // Validate and choose model (default: flash)
     const chosenModel = model === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
-    
-    // 보안 로깅 (민감 정보 제외)
-    console.log(`📊 분석 요청: ${chosenModel}, ${mimeType}, 사용자 티어: ${userTier}`);
-
-    // 서버사이드에서만 접근 가능한 프롬프트 가져오기
-    const analysisPrompt = getAnalysisPrompt(userTier);
+    console.log('Using model:', chosenModel);
 
     let response;
     try {
@@ -85,7 +144,7 @@ export default async function handler(req: any, res: any) {
         model: chosenModel,
         contents: {
           parts: [
-            { text: analysisPrompt }, // 보안 프롬프트 사용
+            { text: prompt },
             {
               inlineData: {
                 mimeType,
@@ -100,25 +159,15 @@ export default async function handler(req: any, res: any) {
             type: Type.OBJECT,
             properties: {
               data_schema: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  fields: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        key: { type: Type.STRING },
-                        label: { type: Type.STRING },
-                        type: { type: Type.STRING },
-                        required: { type: Type.BOOLEAN },
-                        order: { type: Type.NUMBER }
-                      },
-                      required: ['key', 'label', 'type', 'order']
-                    }
-                  }
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    type: { type: Type.STRING },
+                    value: { type: Type.STRING },
+                  },
                 },
-                required: ['title', 'fields']
               },
               markdown_template: { type: Type.STRING },
               html_template: { type: Type.STRING },
@@ -128,68 +177,40 @@ export default async function handler(req: any, res: any) {
           temperature: 0.1,
         },
       });
-    } catch (apiError: any) {
-      console.error('🚨 Gemini API 호출 실패:', apiError?.message || apiError);
-      
-      // 프로덕션에서는 상세한 에러 정보 숨김
-      const errorMessage = nodeEnv === 'production' 
-        ? 'AI 서비스가 일시적으로 이용할 수 없습니다' 
-        : `AI API 오류: ${apiError?.message || '알 수 없는 오류'}`;
-        
-      return res.status(503).json({ error: errorMessage });
+    } catch (apiError) {
+      console.error('Gemini API call failed:', apiError);
+      return res.status(503).json({ error: 'AI service temporarily unavailable' });
     }
 
     // 응답 검증 및 안전한 텍스트 추출
-    if (!response?.text) {
-      console.error('❌ AI 응답이 비어있음:', response);
-      return res.status(502).json({ error: 'AI 모델로부터 응답을 받지 못했습니다' });
+    if (!response || !response.text) {
+      console.error('Empty or invalid response from Gemini API:', response);
+      return res.status(502).json({ error: 'Empty response from AI model' });
     }
 
     const text = response.text.trim();
     if (!text) {
-      console.error('❌ 빈 텍스트 응답');
-      return res.status(502).json({ error: 'AI 분석 결과가 비어있습니다' });
+      console.error('Empty text response from Gemini API');
+      return res.status(502).json({ error: 'Empty text response from AI model' });
     }
 
-    // JSON 형식 검증
     if (!text.startsWith('{') || !text.endsWith('}')) {
-      console.error('❌ 잘못된 JSON 형식:', text.substring(0, 100) + '...');
-      return res.status(502).json({ error: 'AI 응답 형식이 올바르지 않습니다' });
+      console.error('Invalid JSON format from Gemini API:', text.substring(0, 200));
+      return res.status(502).json({ error: 'Invalid JSON response from model' });
     }
 
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch (parseError: any) {
-      console.error('❌ JSON 파싱 오류:', parseError?.message);
-      
-      // 프로덕션에서는 상세 오류 숨김
-      const errorMessage = nodeEnv === 'production'
-        ? 'AI 분석 결과를 처리할 수 없습니다'
-        : `JSON 파싱 오류: ${parseError?.message}`;
-        
-      return res.status(502).json({ error: errorMessage });
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError, 'Text:', text.substring(0, 200));
+      return res.status(502).json({ error: 'Failed to parse AI response as JSON' });
     }
 
-    // 응답 구조 검증
-    if (!parsed?.data_schema || !parsed?.markdown_template || !parsed?.html_template) {
-      console.error('❌ 불완전한 분석 결과:', Object.keys(parsed || {}));
-      return res.status(502).json({ error: '분석 결과가 불완전합니다' });
-    }
-
-    console.log('✅ 분석 완료');
     return res.status(200).json(parsed);
-
   } catch (err: any) {
-    console.error('🚨 서버 오류:', err?.message || err);
-    
-    // 프로덕션에서는 일반적인 오류 메시지만 반환
-    const errorMessage = nodeEnv === 'production'
-      ? '서버에서 오류가 발생했습니다'
-      : `서버 오류: ${err?.message || '알 수 없는 오류'}`;
-      
-    return res.status(500).json({ error: errorMessage });
+    console.error('analyze API error:', err);
+    return res.status(500).json({ error: err?.message || 'Server error' });
   }
 }
-
 

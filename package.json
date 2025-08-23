@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.43.1",
+    "@clerk/nextjs": "^6.31.4",
     "@google/genai": "^1.14.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",

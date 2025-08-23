@@ -1,5 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
 import { FileUpload } from './components/FileUpload';
 import { ResultDisplay } from './components/ResultDisplay';
 import { Spinner } from './components/Spinner';
@@ -68,6 +69,33 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1600px] xl:px-8 2xl:px-12">
         <header className="text-center mb-20">
+          {/* 인증 버튼 영역 */}
+          <div className="absolute top-4 right-4 z-10">
+            <SignedOut>
+              <div className="flex items-center gap-3">
+                <SignInButton mode="modal">
+                  <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+                    로그인
+                  </button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                    회원가입
+                  </button>
+                </SignUpButton>
+              </div>
+            </SignedOut>
+            <SignedIn>
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-10 h-10"
+                  }
+                }}
+              />
+            </SignedIn>
+          </div>
+
           <div className="relative">
             {/* 배경 장식 */}
             <div className="absolute inset-0 -z-10 overflow-hidden">

@@ -1,150 +1,127 @@
 import type { AnalysisResult } from '../types';
 
-/**
- * 🔒 보안 강화된 클라이언트 서비스
- * 
- * 주요 보안 개선사항:
- * - 프롬프트 완전 제거: 모든 프롬프트 로직은 서버사이드에서만 처리
- * - 에러 메시지 일반화: 상세한 기술 정보 노출 방지
- * - 요청 검증 강화: 클라이언트 사이드 기본 검증
- * 
- * ⚠️ 중요: 이 파일은 브라우저에서 실행되므로 민감한 정보를 포함하지 않습니다.
- */
+// 프론트엔드에서는 직접 Gemini를 호출하지 않고, Vercel Serverless API를 호출합니다.
+// 아래 프롬프트는 서버의 api/analyze.ts에 있습니다.
 
-/**
- * 파일 타입 및 크기 검증 (클라이언트 사이드 1차 검증)
- */
-function validateFileInput(file: { mimeType: string; data: string }): void {
-  // 허용된 파일 타입 검증
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-  if (!allowedTypes.includes(file.mimeType)) {
-    throw new Error('지원하지 않는 파일 형식입니다. (지원: JPG, PNG, WebP, PDF)');
-  }
+const prompt = `
+아래 프롬프트 세트는 업로드된 제조 일지 이미지/PDF를 원본과 최대한 동일하게 디지털 템플릿으로 복원하기 위한 단계형 지침입니다. 
+출력은 단계적으로 data_schema → markdown_template → html_template 순서로 생성하며, 
+HTML 단계에서는 이미지/PDF를 다시 보지 않고 오직 이전 두 산출물만 사용합니다.
+html파일을 가지고 db연결해서 반영구적으로 시스템에서 사용할겁니다. 
 
-  // 파일 크기 검증 (클라이언트 사이드 기본 체크)
-  const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-  const estimatedSize = (file.data.length * 3) / 4; // Base64 디코딩 후 예상 크기
-  
-  if (estimatedSize > maxSizeBytes) {
-    throw new Error('파일 크기가 너무 큽니다. (최대 10MB)');
-  }
+[system]
+You are an expert in reverse-engineering scanned manufacturing logs into structured, reusable digital templates.
+Your absolute priority is to faithfully preserve the original page’s layout, spacing, and visual style.
+Never modernize or beautify the design. Be literal and conservative.
 
-  // Base64 형식 기본 검증
-  if (!file.data || typeof file.data !== 'string') {
-    throw new Error('올바르지 않은 파일 데이터입니다.');
-  }
-}
+All outputs MUST be a single valid JSON object only (no prose, no code fences).
 
-/**
- * 서버 응답 구조 검증
- */
-function validateAnalysisResult(result: any): result is AnalysisResult {
-  return (
-    result &&
-    typeof result === 'object' &&
-    result.data_schema &&
-    typeof result.markdown_template === 'string' &&
-    typeof result.html_template === 'string' &&
-    result.data_schema.title &&
-    Array.isArray(result.data_schema.fields)
-  );
-}
+1단계 — data_schema(JSON) 생성 
+업로드된 제조 일지 이미지/PDF를 분석해 원본과 동일한 필드 구조와 순서의 data_schema만 생성하라.
 
-/**
- * 문서 분석 요청 함수
- * 
- * @param file 분석할 파일 정보 (mimeType, base64 data)
- * @param opts 옵션 (모델 선택 등)
- * @returns 분석 결과 (data_schema, markdown_template, html_template)
- */
-export const analyzeDocument = async (
-  file: { mimeType: string; data: string }, 
-  opts?: { model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' }
-): Promise<AnalysisResult> => {
-  
-  // 1차 클라이언트 사이드 검증
-  try {
-    validateFileInput(file);
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : '파일 검증 실패');
-  }
-
-  // 서버 요청 준비
-  const requestBody = {
-    mimeType: file.mimeType,
-    data: file.data,
-    model: opts?.model || 'gemini-2.5-flash',
-    // 향후 사용자 인증 정보 추가 예정
-    // userTier: 'free' // 기본값
-  };
-
-  let response: Response;
-  
-  try {
-    response = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        // 향후 인증 헤더 추가
-        // 'Authorization': `Bearer ${userToken}`
-      },
-      body: JSON.stringify(requestBody),
-    });
-  } catch (networkError) {
-    console.error('네트워크 오류:', networkError);
-    throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
-  }
-
-  // HTTP 상태 코드별 에러 처리
-  if (!response.ok) {
-    let errorMessage = '분석 중 오류가 발생했습니다.';
-    
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.error || errorMessage;
-    } catch {
-      // JSON 파싱 실패 시 상태 코드 기반 메시지
-      switch (response.status) {
-        case 400:
-          errorMessage = '잘못된 요청입니다. 파일을 다시 확인해주세요.';
-          break;
-        case 403:
-          errorMessage = '접근이 거부되었습니다.';
-          break;
-        case 413:
-          errorMessage = '파일 크기가 너무 큽니다.';
-          break;
-        case 429:
-          errorMessage = '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.';
-          break;
-        case 500:
-          errorMessage = '서버 오류가 발생했습니다.';
-          break;
-        case 503:
-          errorMessage = 'AI 서비스가 일시적으로 이용할 수 없습니다.';
-          break;
-        default:
-          errorMessage = `서버 오류 (${response.status})`;
+출력 형식(단일 JSON 객체):
+{
+  "data_schema": {
+    "title": "원본 문서명(간결)",
+    "fields": [
+      {
+        "key": "공백/특수문자 없는 키(원본 라벨 기반)",
+        "label": "원본 라벨(한글/공백 허용)",
+        "type": "string|number|boolean|date|time|datetime|enum|textarea|checkbox|radio",
+        "required": true|false,
+        "order": <원본 시각 순서 정수>,
+        "enum": ["선택지1","선택지2"],
+        "unit": "단위(있으면)",
+        "format": "date|time|datetime|regex|none",
+        "group": "섹션/테이블 이름(있으면)",
+        "notes": "불확실한 추정 근거(있으면)"
       }
-    }
-    
-    throw new Error(errorMessage);
+      // … 모든 필드를 원본 순서대로 기술
+    ]
   }
+}
 
-  // 응답 데이터 파싱
-  let parsed: any;
-  try {
-    parsed = await response.json();
-  } catch (parseError) {
-    console.error('응답 파싱 오류:', parseError);
-    throw new Error('서버 응답을 처리할 수 없습니다.');
+제약:
+- 페이지/레이아웃 해석은 하되, 지금은 데이터 구조만 출력한다.
+- 체크박스/라디오/서명칸/합계줄 등 특수 요소도 가능한 범위에서 type으로 표현한다.
+- 불확실하면 type을 보수적으로 지정하고 notes에 근거를 남긴다.
+--------------------------------
+2단계 — design(markdown_template) 생성 
+ - 순수 마크다운만 허용(HTML 태그 절대 금지). 이 단계에서 원본 레이아웃을 최대한 정확하게 서술합니다.
+
+아래 data_schema를 참고하여 **원본 레이아웃을 반영한 순수 마크다운 템플릿**만 생성하라.
+
+입력:
+<PASTE_STEP1_JSON_HERE>
+
+출력 형식(단일 JSON 객체):
+{
+  "markdown_template": "..."
+}
+
+마크다운 규칙(엄격):
+HTML 태그 사용 절대 금지.
+제목: #, ##, ### 만 사용
+테이블: | 구분자만 사용 (열 너비 힌트는 헤더명 뒤 괄호 %로 표기 가능: 예) 항목(40%))
+강조: 굵게, 기울임 만 사용
+구분선: ---
+목록: -, 1.
+플레이스홀더: {{fieldName}} (data_schema.fields[].key와 일치)
+체크박스: [ ] 또는 [x] 만 사용 (예: 점검 항목 표의 체크 열)
+원본의 섹션 순서/표 구조/라벨/칸 배치를 그대로 반영할 것
+여백/간격/라인 두께는 불가피하게 근사 표현 시, 표/제목/구분선 배치로 드러낼 것
+(선택) 열 너비 힌트: 표 헤더에 비율 표기 예) | 항목(40%) | 체크(20%) | 비고(40%) |
+
+--------------------------------
+3단계 — html_template 생성 
+이 단계는 이미지나 PDF를 다시 보지 않고, 오직 data_schema와 markdown_template 두 개만 입력으로 사용해 HTML을 만든다.[
+다음 **data_schema**와 **markdown_template**만을 참고하여, 
+원본과 최대한 유사한 Vanilla CSS 기반 html_template를 생성하라.이미지/PDF는 절대 참조하지 말 것. 
+HTML은 반드시 주어진 JSON과 Markdown으로만 구성한다.
+출력 html 파일에 줄 바꿈, 들여쓰기 등 가독성을 고려한 Refactoring 적용해
+
+입력:
+data_schema:
+<PASTE_STEP1_JSON_HERE>
+
+markdown_template:
+<PASTE_STEP2_JSON_HERE.markdown_template>
+
+출력 형식(단일 JSON 객체):
+{
+  "html_template": "<div style=\"min-height: 100vh; background: white; color: black;\"> ... </div>"
+}
+
+스타일/기능 제약:
+- 루트 컨테이너: **bg-white text-black** (항상 밝은 배경, 어두운 텍스트)
+- Vanilla CSS 중심, 인라인 스타일 또는 <style> 태그 활용
+- **모든 데이터 자리**는 {{fieldName}} placeholder 유지(치환용)
+- 마크다운의 표/제목/구분선/목록 구조를 **충실히** 보존하여 HTML로 매핑
+- 테이블/그리드 폭 비율은 마크다운 헤더의 괄호 % 힌트를 파싱해 CSS width: %로 설정
+- 체크박스/라디오는 <input type="checkbox">, <input type="radio">로 표현하되 값 표시는 placeholder 로 유지,
+- 인쇄 품질: @media print { @page { size: A4; margin: 10mm } } 포함,
+- 임의 미화/재배치 금지. 마크다운(레이아웃 사양서)을 최대한 **그대로** HTML로 투영할 것
+
+검증 규칙(내부적으로 준수):
+- 모든 {{fieldName}}는 data_schema.fields[].key 안에 존재해야 함(미스매치 금지)
+- 루트에 bg-white text-black 포함 여부 확인
+- 테이블/섹션 순서는 markdown_template 순서와 동일해야 함
+`;
+
+export const analyzeDocument = async (file: { mimeType: string; data: string }, opts?: { model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' }): Promise<AnalysisResult> => {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...file, model: opts?.model }),
+  });
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`Analyze failed: ${res.status} ${msg}`);
   }
-
-  // 응답 구조 검증
-  if (!validateAnalysisResult(parsed)) {
-    console.error('잘못된 응답 구조:', parsed);
-    throw new Error('분석 결과가 올바르지 않습니다.');
+  const parsed = await res.json();
+  // 최소 검증
+  if (!parsed?.data_schema || !parsed?.markdown_template || !parsed?.html_template) {
+    throw new Error('Invalid analyze response shape');
   }
-
   return parsed as AnalysisResult;
 };
