@@ -19,7 +19,16 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <ClerkProvider 
+      publishableKey={PUBLISHABLE_KEY}
+      appearance={{
+        elements: {
+          footerAction: "hidden",
+          footerActionText: "hidden",
+          footerActionLink: "hidden"
+        }
+      }}
+    >
       <App />
     </ClerkProvider>
   </React.StrictMode>

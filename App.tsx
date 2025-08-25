@@ -71,7 +71,19 @@ const App: React.FC = () => {
         {/* 로그인 버튼 - 우측 상단 */}
         <div className="flex justify-end mb-4">
           <SignedOut>
-            <SignInButton mode="modal">
+            <SignInButton 
+              mode="modal"
+              appearance={{
+                elements: {
+                  modalContent: "bg-white rounded-lg shadow-xl",
+                  card: "shadow-none border-0",
+                  headerTitle: "text-xl font-semibold text-gray-800",
+                  socialButtonsBlockButton: "border border-gray-300 hover:bg-gray-50",
+                  formButtonPrimary: "bg-blue-600 hover:bg-blue-700",
+                  footerAction: "hidden"
+                }
+              }}
+            >
               <button className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:bg-white">
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -86,7 +98,8 @@ const App: React.FC = () => {
                 elements: {
                   avatarBox: "w-10 h-10",
                   userButtonPopoverCard: "shadow-xl border border-gray-200",
-                  userButtonPopoverActionButton: "hover:bg-gray-50"
+                  userButtonPopoverActionButton: "hover:bg-gray-50",
+                  userButtonPopoverFooter: "hidden"
                 }
               }}
             />
@@ -177,7 +190,19 @@ const App: React.FC = () => {
                   AI Report-Log Digitizer를 사용하려면 로그인해 주세요. 
                   안전하고 개인화된 서비스를 제공합니다.
                 </p>
-                <SignInButton mode="modal">
+                <SignInButton 
+                  mode="modal"
+                  appearance={{
+                    elements: {
+                      modalContent: "bg-white rounded-lg shadow-xl",
+                      card: "shadow-none border-0",
+                      headerTitle: "text-xl font-semibold text-gray-800",
+                      socialButtonsBlockButton: "border border-gray-300 hover:bg-gray-50",
+                      formButtonPrimary: "bg-blue-600 hover:bg-blue-700",
+                      footerAction: "hidden"
+                    }
+                  }}
+                >
                   <button className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-3 rounded-full font-medium hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 shadow-lg hover:shadow-xl">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
