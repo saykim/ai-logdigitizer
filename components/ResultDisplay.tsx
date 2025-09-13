@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import type { AnalysisResult, ViewType } from '../types';
+import { DatabaseConnection } from './DatabaseConnection';
 
 interface ResultDisplayProps {
   result: AnalysisResult;
@@ -184,6 +185,8 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
             </div>
           </div>
         );
+      case 'database':
+        return <DatabaseConnection result={result} />;
       default:
         return null;
     }
@@ -195,6 +198,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
         <TabButton label="HTML 템플릿" isActive={activeView === 'html'} onClick={() => setActiveView('html')} />
         <TabButton label="JSON 스키마" isActive={activeView === 'json'} onClick={() => setActiveView('json')} />
         <TabButton label="마크다운 템플릿" isActive={activeView === 'markdown'} onClick={() => setActiveView('markdown')} />
+        <TabButton label="DB 연결" isActive={activeView === 'database'} onClick={() => setActiveView('database')} />
       </div>
       <div className="animate-fade-in">{renderContent()}</div>
     </div>
