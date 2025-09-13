@@ -73,12 +73,10 @@ HTML 태그 사용 절대 금지.
 (선택) 열 너비 힌트: 표 헤더에 비율 표기 예) | 항목(40%) | 체크(20%) | 비고(40%) |
 
 --------------------------------
-3단계 — html_template 생성 
-이 단계는 이미지나 PDF를 다시 보지 않고, 오직 data_schema와 markdown_template 두 개만 입력으로 사용해 HTML을 만든다.[
+3단계 — html_template 생성 (완전한 데모 웹페이지)
+이 단계는 이미지나 PDF를 다시 보지 않고, 오직 data_schema와 markdown_template 두 개만 입력으로 사용해 HTML을 만든다.
 다음 **data_schema**와 **markdown_template**만을 참고하여, 
-원본과 최대한 유사한 Vanilla CSS 기반 html_template를 생성하라.이미지/PDF는 절대 참조하지 말 것. 
-HTML은 반드시 주어진 JSON과 Markdown으로만 구성한다.
-출력 html 파일에 줄 바꿈, 들여쓰기 등 가독성을 고려한 Refactoring 적용해
+데모용 완전한 웹 애플리케이션 형태의 html_template를 생성하라.
 
 입력:
 data_schema:
@@ -89,23 +87,50 @@ markdown_template:
 
 출력 형식(단일 JSON 객체):
 {
-  "html_template": "<div style=\"min-height: 100vh; background: white; color: black;\"> ... </div>"
+  "html_template": "<!DOCTYPE html><html>...</html>"
 }
+
+완전한 데모 웹페이지 요구사항:
+1. **완전한 HTML 문서 구조**: <!DOCTYPE html>, <html>, <head>, <body> 포함
+2. **로컬 데이터 관리**: localStorage를 사용한 데이터 저장/불러오기
+3. **CRUD 기능**: 데이터 저장, 불러오기, 수정, 삭제 기능 (로컬 기반)
+4. **폼 검증**: 필드별 유효성 검사 및 에러 표시
+5. **상태 관리**: 저장 상태, 로딩 상태 표시
+6. **사용자 경험**: 성공/에러 메시지, 확인 다이얼로그
+7. **반응형 디자인**: 모바일/데스크톱 대응
+8. **데이터 목록**: 저장된 항목 목록 및 관리 기능
+
+JavaScript 기능 포함사항:
+- 폼 데이터 수집 및 검증
+- localStorage 기반 데이터 저장/조회
+- 저장된 데이터 목록 표시
+- 데이터 편집/삭제 기능
+- JSON 데이터 내보내기/가져오기
+- 폼 초기화 및 자동 저장
 
 스타일/기능 제약:
 - 루트 컨테이너: **bg-white text-black** (항상 밝은 배경, 어두운 텍스트)
-- Vanilla CSS 중심, 인라인 스타일 또는 <style> 태그 활용
-- **모든 데이터 자리**는 {{fieldName}} placeholder 유지(치환용)
+- Vanilla CSS + JavaScript만 사용 (외부 라이브러리 없이)
+- **모든 데이터 입력 필드**는 data-id 속성으로 식별
 - 마크다운의 표/제목/구분선/목록 구조를 **충실히** 보존하여 HTML로 매핑
 - 테이블/그리드 폭 비율은 마크다운 헤더의 괄호 % 힌트를 파싱해 CSS width: %로 설정
-- 체크박스/라디오는 <input type="checkbox">, <input type="radio">로 표현하되 값 표시는 placeholder 로 유지,
-- 인쇄 품질: @media print { @page { size: A4; margin: 10mm } } 포함,
-- 임의 미화/재배치 금지. 마크다운(레이아웃 사양서)을 최대한 **그대로** HTML로 투영할 것
+- 인쇄 품질: @media print { @page { size: A4; margin: 10mm } } 포함
+- 임의 미화/재배치 금지. 마크다운(레이아웃 사양서)을 최대한 **그대로** HTML로 투영
 
-검증 규칙(내부적으로 준수):
-- 모든 {{fieldName}}는 data_schema.fields[].key 안에 존재해야 함(미스매치 금지)
-- 루트에 bg-white text-black 포함 여부 확인
+데모 웹페이지 구조:
+1. **헤더 섹션**: 제목과 간단한 설명
+2. **폼 섹션** (중앙): 원본 레이아웃 기반 데이터 입력 폼
+3. **제어 버튼** (하단): 저장, 불러오기, 초기화, 내보내기 버튼
+4. **데이터 목록** (사이드바 또는 하단): 저장된 데이터 목록 및 관리
+5. **상태 표시**: 저장 상태, 메시지 표시 영역
+
+검증 규칙:
+- 모든 data-id는 data_schema.fields[].key와 일치해야 함
+- 완전한 HTML 문서 구조 포함
+- localStorage 기반 JavaScript 기능이 모두 동작해야 함
+- 루트에 bg-white text-black 포함
 - 테이블/섹션 순서는 markdown_template 순서와 동일해야 함
+- DB 연결 코드 없이 완전한 데모로 동작해야 함
 `;
 
 export const analyzeDocument = async (file: { mimeType: string; data: string }, opts?: { model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' }): Promise<AnalysisResult> => {
